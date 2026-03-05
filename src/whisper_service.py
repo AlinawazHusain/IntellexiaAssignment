@@ -1,7 +1,4 @@
 import whisper
-from deep_translator import GoogleTranslator
-from torch.cuda import is_available
-
 
 class WhisperTranscriber:
     '''
@@ -14,9 +11,8 @@ class WhisperTranscriber:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
 
-            device = "cuda" if is_available() else "cpu"
             print("Loading Whisper model...")
-            cls._model = whisper.load_model(name = "base" , device = device)
+            cls._model = whisper.load_model(name = "medium")
 
         return cls._instance
 
@@ -25,35 +21,40 @@ class WhisperTranscriber:
     
 
     def process_audio(self, file_path, fp16 = True):
-        print("Translation.....")
+        print("Transcribing.....")
         result =  self._model.transcribe(file_path , fp16 = fp16)
 
         detected_lang = result["language"]
         text = result["text"]
 
+        print(detected_lang)
 
-        if detected_lang in ["hi", "hindi" , "ur", "urdu"]:
-            translated = GoogleTranslator(source='hi', target='en').translate(text)
+
+        if detected_lang in ["hi", "hindi"]:
             return {
-                "detected_language": "Hindi" if detected_lang in ["hi" , "hindi"] else "Urdu", 
+                "detected_language": "hi", 
                 "original_text": text,
-                "translated_text": translated,
-                "translated_to": "English"
+                "translated_to": "en"
             }
+        
+        elif detected_lang in ["ur", "urdu"]:
+            return {
+                "detected_language": "ur", 
+                "original_text": text,
+                "translated_to": "en"
+            }
+        
 
         elif detected_lang in ["en", "english"]:
-            translated = GoogleTranslator(source='en', target='hi').translate(text)
             return {
-                "detected_language": "English",
+                "detected_language": "en",
                 "original_text": text,
-                "translated_text": translated,
-                "translated_to": "Hindi"
+                "translated_to": "hi"
             }
 
         else:
             return {
                 "detected_language": detected_lang,
                 "original_text": text,
-                "translated_text": None,
                 "translated_to": "Unsupported language"
             }
